@@ -4,29 +4,42 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException, WebDriverException
 import threading
 import time
 
 app = Flask(__name__)
-driver = webdriver.Chrome()
+
 mensagens_respondidas = set()
+driver = None  # vamos inicializar dentro da thread
+
 
 def iniciar_automatizacao():
-    global mensagens_respondidas
+    global mensagens_respondidas, driver
+
+    # Inicializa o ChromeDriver aqui dentro da thread
+    try:
+        driver = webdriver.Chrome()
+    except WebDriverException as e:
+        print(f"❌ Erro ao iniciar ChromeDriver: {e}")
+        return
 
     driver.get("https://whats-delivery-uber-vairapido.onrender.com/")
 
-    email_input = driver.find_element(By.XPATH, '//*[@id="root"]/div/div/div/div/div/form/div[1]/input')
-    email_input.send_keys("delivery@gmail.com")
+    try:
+        email_input = driver.find_element(By.XPATH, '//*[@id="root"]/div/div/div/div/div/form/div[1]/input')
+        email_input.send_keys("delivery@gmail.com")
 
-    password_input = driver.find_element(By.XPATH, '//*[@id="root"]/div/div/div/div/div/form/div[2]/input')
-    password_input.send_keys("230872Ferrari@@")
+        password_input = driver.find_element(By.XPATH, '//*[@id="root"]/div/div/div/div/div/form/div[2]/input')
+        password_input.send_keys("230872Ferrari@@")
 
-    login_button = driver.find_element(By.XPATH, '//*[@id="root"]/div/div/div/div/div/form/button')
-    login_button.click()
+        login_button = driver.find_element(By.XPATH, '//*[@id="root"]/div/div/div/div/div/form/button')
+        login_button.click()
 
-    time.sleep(5)
+        time.sleep(5)
+    except Exception as e:
+        print(f"❌ Erro ao fazer login: {e}")
+        return
 
     try:
         notificaco_button = WebDriverWait(driver, 10).until(
@@ -34,8 +47,8 @@ def iniciar_automatizacao():
         )
         notificaco_button.click()
         time.sleep(5)
-    except:
-        print("❌ Botão de notificação não encontrado.")
+    except Exception:
+        print("❌ Botão de notificação não encontrado ou já clicado.")
 
     try:
         mensagens_atuais = WebDriverWait(driver, 20).until(
@@ -89,14 +102,19 @@ def iniciar_automatizacao():
 
         time.sleep(5)
 
+
+# Start da automação em uma thread daemon para não travar o Flask
 threading.Thread(target=iniciar_automatizacao, daemon=True).start()
+
 
 @app.route('/')
 def index():
     return 'Servidor WhatsApp Delivery rodando na porta 3001 ✅'
 
+
 @app.route('/enviar-mensagem', methods=['POST'])
 def enviar_mensagem():
+    global driver
     try:
         texto = request.json.get('mensagem', '')
 
@@ -110,5 +128,7 @@ def enviar_mensagem():
     except Exception as e:
         return jsonify({'status': 'Erro ao enviar mensagem ❌', 'erro': str(e)}), 500
 
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3001)
+    print("🔵 Flask iniciando na porta 3001...")
+    app.run(host='0.0.0.0', port=3001, threaded=True, debug=False)
