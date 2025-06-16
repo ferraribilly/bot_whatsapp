@@ -5,21 +5,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 import threading
 import time
 
 app = Flask(__name__)
-
-# Configuração do Selenium para modo Headless (Render)
-chrome_options = Options()
-chrome_options.add_argument("--headless")
-chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--no-sandbox")
-
-driver = webdriver.Chrome(service=Service('/usr/local/bin/chromedriver'), options=chrome_options)
-
+driver = webdriver.Chrome()
 mensagens_respondidas = set()
 
 def iniciar_automatizacao():
