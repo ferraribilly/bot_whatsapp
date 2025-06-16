@@ -5,11 +5,21 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 import threading
 import time
 
 app = Flask(__name__)
-driver = webdriver.Chrome()
+
+# Configuração do Selenium para modo Headless (Render)
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument("--no-sandbox")
+
+driver = webdriver.Chrome(service=Service('/usr/local/bin/chromedriver'), options=chrome_options)
+
 mensagens_respondidas = set()
 
 def iniciar_automatizacao():
@@ -37,7 +47,6 @@ def iniciar_automatizacao():
     except:
         print("❌ Botão de notificação não encontrado.")
 
-   
     try:
         mensagens_atuais = WebDriverWait(driver, 20).until(
             EC.presence_of_all_elements_located((By.XPATH, '//*[@id="root"]/div/div[1]/div/div[2]/ul/li'))
@@ -58,7 +67,7 @@ def iniciar_automatizacao():
                 try:
                     texto_msg = msg_element.text.strip()
                 except StaleElementReferenceException:
-                    continue 
+                    continue
 
                 if texto_msg and texto_msg not in mensagens_respondidas:
                     print(f"📩 Nova mensagem recebida: {texto_msg}")
@@ -70,7 +79,7 @@ def iniciar_automatizacao():
                         campo_input = WebDriverWait(driver, 5).until(
                             EC.presence_of_element_located((By.XPATH, '//*[@id="root"]/div/div[1]/div/div[2]/div/form/div/div/input'))
                         )
-                        campo_input.clear() 
+                        campo_input.clear()
                         campo_input.send_keys("Seja bem-vindo")
                         campo_input.send_keys(Keys.ENTER)
                         print("✅ Resposta enviada: Seja bem-vindo")
@@ -84,7 +93,6 @@ def iniciar_automatizacao():
                         print(f"❌ Erro ao responder mensagem: {e}")
 
         except (TimeoutException, StaleElementReferenceException):
-           
             pass
         except Exception as e:
             print(f"❌ Erro ao monitorar mensagens: {e}")
